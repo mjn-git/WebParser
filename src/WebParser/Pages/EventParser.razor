@@ -1,0 +1,82 @@
+﻿@page "/event-parser"
+@using WebParser.Model
+@using WebParser.Exceptions
+@inject WebParser.Services.EventParser.IEventParserService eventParserService
+@inject WebParser.Services.DataReader.IDataReaderService dataReaderService
+<h3>Event Parser</h3>
+<div>
+    <p>
+        <label>
+            Upload event file:
+            <InputFile OnChange="@LoadFilesAsync" />
+        </label>
+    </p>
+</div>
+@if (!String.IsNullOrEmpty(errorMessage))
+{
+
+    <div class="card text-white bg-warning mb-3" style="max-width: 18rem;">
+        <div class="card-header">Error occurred</div>
+        <div class="card-body">
+            @errorMessage
+        </div>
+    </div>
+}
+<div>
+
+</div>
+@if (events?.Count > 0)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var eventItem in events)
+            {
+                <tr>
+                    <td>@eventItem.Name</td>
+                    <td>@eventItem.Description</td>
+                    <td>@eventItem.StartDate</td>
+                    <td>@eventItem.EndDate</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div>File hasn't been loaded, please upload file first.</div>
+}
+
+@code {
+    private IList<EventModel> events;
+    private string errorMessage;
+
+
+    private async Task LoadFilesAsync(InputFileChangeEventArgs e)
+    {
+        errorMessage = string.Empty;
+        try
+        {
+            var contentStream = e.File.OpenReadStream();
+            var contentString = await dataReaderService.ReadRequestContentAsync(contentStream);
+            events = eventParserService.LoadData(contentString);
+
+        }
+        catch (WebParserException ex)
+        {
+            errorMessage = ex.Message;
+
+        }
+        catch (Exception)
+        {
+            errorMessage = "Application connot precess your file.";
+        }
+    }
+}
